@@ -55,9 +55,12 @@ hooks =
   , ("gi-gstbase", giGstLibOverrides "gst-plugins-base")    -- https://github.com/haskell-gi/haskell-gi/issues/36
   , ("gi-gstvideo", giGstLibOverrides "gst-plugins-base")   -- https://github.com/haskell-gi/haskell-gi/issues/36
   , ("gi-javascriptcore < 4.0.0.0", webkitgtk24xHook)       -- https://github.com/haskell-gi/haskell-gi/issues/36
+  , ("gi-gtkosxapplication", gtkMacIntgrationHook)          -- https://github.com/haskell-gi/haskell-gi/issues/36
   , ("gi-pango", giCairoPhaseOverrides)                     -- https://github.com/haskell-gi/haskell-gi/issues/36
-  , ("gi-pangocairo", giCairoPhaseOverrides)                     -- https://github.com/haskell-gi/haskell-gi/issues/36
+  , ("gi-pangocairo", giCairoPhaseOverrides)                -- https://github.com/haskell-gi/haskell-gi/issues/36
+  , ("gi-gtksource", gtkSourceViewHook)                     -- https://github.com/haskell-gi/haskell-gi/issues/36
   , ("gi-webkit", webkitgtk24xHook)   -- https://github.com/haskell-gi/haskell-gi/issues/36
+  , ("gi-webkit2", webkitgtk214xHook)   -- https://github.com/haskell-gi/haskell-gi/issues/36
   , ("gio", set (libraryDepends . pkgconfig . contains "system-glib = pkgs.glib") True)
   , ("git", set doCheck False)          -- https://github.com/vincenthz/hit/issues/33
   , ("git-annex", gitAnnexHook)
@@ -144,6 +147,12 @@ gtk3Hook :: Derivation -> Derivation    -- https://github.com/NixOS/cabal2nix/is
 gtk3Hook = set (libraryDepends . pkgconfig . contains (pkg "gtk3")) True
          . over (libraryDepends . pkgconfig) (Set.filter (\b -> view localName b /= "gtk3"))
 
+gtkMacIntgrationHook :: Derivation -> Derivation    -- like https://github.com/NixOS/cabal2nix/issues/145
+gtkMacIntgrationHook = set (libraryDepends . pkgconfig . contains (pkg "gtk-mac-integration-gtk3")) True
+                     . set (libraryDepends . pkgconfig . contains (pkg "gtk3")) True
+                     . set (libraryDepends . pkgconfig . contains (pkg "atk")) True
+                     . over (libraryDepends . pkgconfig) (Set.filter (\b -> view localName b `notElem` ["gtk-mac-integration-gtk3", "gtk3", "atk"]))
+         
 haddockHook :: Derivation -> Derivation
 haddockHook = set doCheck False
             . set phaseOverrides "preCheck = \"unset GHC_PACKAGE_PATH\";"
@@ -267,6 +276,7 @@ giCairoPhaseOverrides = over phaseOverrides (++txt)
     txt = unlines [ "preCompileBuildDriver = ''"
                   , "  PKG_CONFIG_PATH+=\":${cairo}/lib/pkgconfig\""
                   , "  setupCompileFlags+=\" $(pkg-config --libs cairo-gobject)\""
+                  , "  export LD_LIBRARY_PATH=\"${cairo}/lib\""
                   , "'';"
                   ]
 
@@ -281,3 +291,11 @@ hfseventsOverrides
 webkitgtk24xHook :: Derivation -> Derivation    -- https://github.com/NixOS/cabal2nix/issues/145
 webkitgtk24xHook = set (libraryDepends . pkgconfig . contains (pkg "webkitgtk24x")) True
                  . over (libraryDepends . pkgconfig) (Set.filter (\b -> view localName b /= "webkitgtk24x"))
+
+webkitgtk214xHook :: Derivation -> Derivation    -- https://github.com/NixOS/cabal2nix/issues/145
+webkitgtk214xHook = set (libraryDepends . pkgconfig . contains (pkg "webkitgtk214x")) True
+                  . over (libraryDepends . pkgconfig) (Set.filter (\b -> view localName b /= "webkitgtk214x"))
+
+gtkSourceViewHook :: Derivation -> Derivation
+gtkSourceViewHook = set (libraryDepends . pkgconfig . contains (pkg "gtksourceview")) True
+                  . over (libraryDepends . pkgconfig) (Set.filter (\b -> view localName b /= "gtksourceview"))
